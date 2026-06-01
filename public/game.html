@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Toca a Mexer</title>
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script defer src="game.js"></script>
+</head>
+
+<body>
+
+    <!-- ECRÃ DE JOGO -->
+    <div id="jogo">
+
+        <div id="top-bar">
+            <button id="settings-btn" onclick="voltarMenu()">⚙</button>
+            <div>
+                <div id="pontos-display">0</div>
+                <div style="font-size:7px; color:#534ab7; letter-spacing:2px;">PONTOS</div>
+            </div>
+            <div id="vidas-display">♥ ♥ ♥</div>
+        </div>
+
+        <div id="camera-box">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="canvas"></canvas>
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                AO VIVO
+            </div>
+        </div>
+
+        <div id="proximas-label">— PRÓXIMAS —</div>
+        <div id="proximas-setas">
+            <div class="proxima-seta" id="prox-1">→</div>
+            <div class="proxima-seta" id="prox-2">↓</div>
+        </div>
+
+        <div id="agora-label">— FAZ AGORA —</div>
+        <div id="seta-atual">→</div>
+
+        <div id="timer-bar">
+            <div id="timer-fill" style="width: 100%;"></div>
+        </div>
+
+        <div id="musica-bar">
+            ♪ <span id="musica-nome">Electronic Rush — 120 BPM</span>
+        </div>
+
+    </div>
+
+    <!-- ECRÃ DE GAME OVER -->
+    <div id="gameover" style="display:none;">
+        <h1>💀 Game Over</h1>
+        <p>Pontuação final:</p>
+        <p id="pontos-finais" style="font-size:36px; color:#7f77dd;">0</p>
+        <button onclick="voltarMenu()">🏠 Voltar ao Menu</button>
+        <button onclick="reiniciar()">🔄 Jogar Novamente</button>
+    </div>
+
+</body>
+
+</html>

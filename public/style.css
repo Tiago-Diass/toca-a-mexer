@@ -1,0 +1,302 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #0a0a1a;
+  color: #ffffff;
+  font-family: 'Orbitron', monospace;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+/* ========== MENU ========== */
+
+#menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 40px 20px;
+}
+
+.titulo {
+  font-size: 42px;
+  font-weight: 700;
+  color: #7f77dd;
+  text-align: center;
+}
+
+.subtitulo {
+  font-size: 14px;
+  color: #afa9ec;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.musicas {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.musicas h2 {
+  font-size: 13px;
+  color: #534ab7;
+  letter-spacing: 3px;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.musica-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #0f0f2a;
+  border: 1.5px solid #2a2a4a;
+  border-radius: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.musica-card:hover {
+  border-color: #7f77dd;
+  background: #1a1a3a;
+}
+
+.musica-emoji {
+  font-size: 28px;
+}
+
+.musica-nome {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.musica-dif {
+  font-size: 11px;
+  color: #534ab7;
+  letter-spacing: 1px;
+  margin-top: 3px;
+}
+
+/* ========== JOGO ========== */
+
+#jogo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  width: 100%;
+  max-width: 380px;
+}
+
+#top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: #0f0f2a;
+  border: 1px solid #1e1e3a;
+  border-radius: 12px;
+  padding: 10px 16px;
+}
+
+#pontos-display {
+  font-size: 20px;
+  color: #ffffff;
+}
+
+#vidas-display {
+  font-size: 20px;
+}
+
+#settings-btn {
+  background: #1a1a2e;
+  border: 1.5px solid #534ab7;
+  border-radius: 8px;
+  color: #7f77dd;
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#camera-box {
+  width: 100%;
+  height: 130px;
+  border-radius: 12px;
+  border: 2px solid #534ab7;
+  overflow: hidden;
+  position: relative;
+  background: #111128;
+}
+
+#camera-box video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+#camera-box canvas {
+  position: absolute;
+  top: 0; left: 0;
+  transform: scaleX(-1);
+}
+
+.live-badge {
+  position: absolute;
+  top: 8px; right: 10px;
+  font-size: 8px;
+  color: #e24b4a;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #e24b4a;
+  animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+#proximas-label {
+  font-size: 8px;
+  color: #534ab7;
+  letter-spacing: 2px;
+}
+
+#proximas-setas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.proxima-seta {
+  width: 160px;
+  height: 44px;
+  background: #0f0f2a;
+  border: 1.5px solid #2a2a4a;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #afa9ec;
+  opacity: 0.5;
+}
+
+#agora-label {
+  font-size: 8px;
+  color: #9fe1cb;
+  letter-spacing: 2px;
+}
+
+#seta-atual {
+  width: 100%;
+  height: 110px;
+  background: #0f0f2a;
+  border: 2px solid #1d9e75;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 72px;
+  color: #5dcaa5;
+  animation: pulse 0.65s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  0%   { transform: scale(1);    opacity: 0.85; }
+  100% { transform: scale(1.12); opacity: 1; }
+}
+
+#timer-bar {
+  width: 100%;
+  height: 5px;
+  background: #1e1e3a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+#timer-fill {
+  height: 100%;
+  background: #1d9e75;
+  border-radius: 4px;
+  transition: width 0.1s linear;
+}
+
+#musica-bar {
+  width: 100%;
+  background: #0f0f2a;
+  border: 1px solid #1e1e3a;
+  border-radius: 10px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 9px;
+  color: #afa9ec;
+  letter-spacing: 1px;
+}
+
+/* ========== GAME OVER ========== */
+
+#gameover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+
+#gameover h1 {
+  font-size: 36px;
+  color: #e24b4a;
+}
+
+#gameover p {
+  font-size: 14px;
+  color: #afa9ec;
+  letter-spacing: 1px;
+}
+
+#gameover button {
+  background: #534ab7;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 32px;
+  font-family: 'Orbitron', monospace;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#gameover button:hover {
+  background: #7f77dd;
+}

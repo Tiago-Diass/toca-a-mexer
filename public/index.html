@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Toca a Mexer</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <div id="menu">
+
+        <h1 class="titulo">🎵 Toca a Mexer</h1>
+        <p class="subtitulo">Mexe a cabeça ao ritmo da música!</p>
+
+        <div class="musicas">
+            <h2>Escolhe uma música</h2>
+
+            <div class="musica-card" onclick="iniciarJogo('facil')">
+                <span class="musica-emoji">🟢</span>
+                <div>
+                    <p class="musica-nome">Electronic Chill</p>
+                    <p class="musica-dif">Fácil — 80 BPM</p>
+                </div>
+            </div>
+
+            <div class="musica-card" onclick="iniciarJogo('medio')">
+                <span class="musica-emoji">🟡</span>
+                <div>
+                    <p class="musica-nome">Electronic Rush</p>
+                    <p class="musica-dif">Médio — 120 BPM</p>
+                </div>
+            </div>
+
+            <div class="musica-card" onclick="iniciarJogo('dificil')">
+                <span class="musica-emoji">🔴</span>
+                <div>
+                    <p class="musica-nome">Electronic Chaos</p>
+                    <p class="musica-dif">Difícil — 160 BPM</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function iniciarJogo(dificuldade) {
+            window.location.href = `game.html?dificuldade=${dificuldade}`;
+        }
+    </script>
+
+</body>
+
+</html>

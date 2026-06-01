@@ -1,0 +1,24 @@
+{
+  "name": "toca-a-mexer",
+  "version": "1.0.0",
+  "description": "Meu primeiro jogo web desenvolvido com ajuda da IA, feito em javascript com nodejs e express",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tiago-Diass/toca-a-mexer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Tiago-Diass/toca-a-mexer/issues"
+  },
+  "homepage": "https://github.com/Tiago-Diass/toca-a-mexer#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

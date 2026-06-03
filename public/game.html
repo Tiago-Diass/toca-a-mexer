@@ -12,8 +12,17 @@
 
 <body>
 
+    <!-- ECRÃ DE PRONTO -->
+    <div id="pronto">
+        <p id="pronto-musica">🎵 Electronic Rush — 120 BPM</p>
+        <h1 id="pronto-titulo">Pronto?</h1>
+        <p id="pronto-sub">Posiciona a cabeça em frente à câmara e clica para começar</p>
+        <button id="pronto-btn" onclick="comecarJogo()">▶ Começar</button>
+        <button id="pronto-voltar" onclick="voltarMenu()">← Voltar</button>
+    </div>
+
     <!-- ECRÃ DE JOGO -->
-    <div id="jogo">
+    <div id="jogo" style="display:none;">
 
         <div id="top-bar">
             <button id="settings-btn" onclick="voltarMenu()">⚙</button>

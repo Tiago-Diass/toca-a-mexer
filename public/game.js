@@ -245,24 +245,26 @@ window.addEventListener('DOMContentLoaded', async () => {
     dificuldade = params.get('dificuldade') || 'medio';
     config = DIFICULDADES[dificuldade];
 
+    // Mostrar info da música no ecrã de pronto
+    document.getElementById('pronto-musica').textContent = '🎵 ' + config.nome;
     document.getElementById('musica-nome').textContent = config.nome;
 
+    // Carregar modelos e câmara em background enquanto o jogador vê o ecrã de pronto
     await carregarModelos();
     await iniciarCamera();
     gerarFila();
+});
+
+async function comecarJogo() {
+    // Este clique no botão serve para desbloquear o áudio no browser
+    iniciarAudio();
+
+    document.getElementById('pronto').style.display = 'none';
+    document.getElementById('jogo').style.display = 'flex';
+
     proximaSeta();
     detetarCabeca();
-
-    // Iniciar áudio no primeiro toque (requisito dos browsers)
-    document.addEventListener('click', function startAudio() {
-        if (!audioCtx) iniciarAudio();
-        document.removeEventListener('click', startAudio);
-    }, { once: true });
-    document.addEventListener('touchstart', function startAudioT() {
-        if (!audioCtx) iniciarAudio();
-        document.removeEventListener('touchstart', startAudioT);
-    }, { once: true });
-});
+}
 
 // ========== CARREGAR MODELOS FACE-API ==========
 async function carregarModelos() {

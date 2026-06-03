@@ -90,6 +90,73 @@ body {
   margin-top: 3px;
 }
 
+/* ========== ECRÃ DE PRONTO ========== */
+
+#pronto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+  padding: 40px 20px;
+  max-width: 420px;
+}
+
+#pronto-musica {
+  font-size: 11px;
+  color: #534ab7;
+  letter-spacing: 2px;
+}
+
+#pronto-titulo {
+  font-size: 52px;
+  font-weight: 700;
+  color: #7f77dd;
+}
+
+#pronto-sub {
+  font-size: 12px;
+  color: #afa9ec;
+  letter-spacing: 1px;
+  line-height: 1.8;
+  max-width: 280px;
+}
+
+#pronto-btn {
+  background: #1d9e75;
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  padding: 18px 48px;
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 10px;
+}
+
+#pronto-btn:hover {
+  background: #5dcaa5;
+  transform: scale(1.04);
+}
+
+#pronto-voltar {
+  background: transparent;
+  color: #534ab7;
+  border: 1.5px solid #534ab7;
+  border-radius: 10px;
+  padding: 10px 24px;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+#pronto-voltar:hover {
+  color: #7f77dd;
+  border-color: #7f77dd;
+}
+
 /* ========== HISTÓRICO ========== */
 
 #historico-label {

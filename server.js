@@ -6,8 +6,8 @@ app.use(express.static('public'));
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
-});
+  });
 
-app.listen(PORT, () => {
-  console.log(`Servidor a correr em http://localhost:${PORT}`);
-});
+  app.listen(PORT, () => {
+    console.log(`Servidor a correr em http://localhost:${PORT}`);
+    });

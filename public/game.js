@@ -1,30 +1,242 @@
 // ========== CONFIGURAÇÕES ==========
 const DIFICULDADES = {
-    facil: { bpm: 80, tempoSeta: 4000, nome: 'Electronic Chill — 80 BPM' },
-    medio: { bpm: 120, tempoSeta: 3000, nome: 'Electronic Rush — 120 BPM' },
+    facil:   { bpm: 80,  tempoSeta: 4000, nome: 'Electronic Chill — 80 BPM' },
+    medio:   { bpm: 120, tempoSeta: 3000, nome: 'Electronic Rush — 120 BPM' },
     dificil: { bpm: 160, tempoSeta: 2000, nome: 'Electronic Chaos — 160 BPM' }
 };
 
-const SETAS = ['↑', '↓', '←', '→'];
-const DIRECOES = {
-    '↑': 'cima',
-    '↓': 'baixo',
-    '←': 'esquerda',
-    '→': 'direita'
-};
+const SETAS   = ['↑', '↓', '←', '→'];
+const DIRECOES = { '↑': 'cima', '↓': 'baixo', '←': 'esquerda', '→': 'direita' };
 
 // ========== ESTADO DO JOGO ==========
-let pontos = 0;
-let vidas = 3;
-let filaSetaS = [];
-let setaAtual = null;
-let timerInterval = null;
-let tempoRestante = 100;
-let dificuldade = 'medio';
-let config = DIFICULDADES['medio'];
-let jogoAtivo = false;
-let ultimaDirecao = null;
-let bloqueado = false;
+let pontos = 0, vidas = 3, filaSetaS = [], setaAtual = null;
+let timerInterval = null, tempoRestante = 100;
+let dificuldade = 'medio', config = DIFICULDADES['medio'];
+let jogoAtivo = false, ultimaDirecao = null, bloqueado = false;
+
+// ========== ÁUDIO ==========
+let audioCtx = null;
+let musicaAtiva = false;
+let beatInterval = null;
+let oscillators = [];
+
+function iniciarAudio() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    musicaAtiva = true;
+    tocarMusica(dificuldade);
+}
+
+function pararAudio() {
+    musicaAtiva = false;
+    clearInterval(beatInterval);
+    oscillators.forEach(o => { try { o.stop(); } catch(e) {} });
+    oscillators = [];
+}
+
+// --- Utilitários de síntese ---
+function criarOscilador(tipo, freq, ganho, inicio, fim, destino) {
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = tipo;
+    osc.frequency.setValueAtTime(freq, inicio);
+    gain.gain.setValueAtTime(ganho, inicio);
+    gain.gain.exponentialRampToValueAtTime(0.0001, fim);
+    osc.connect(gain);
+    gain.connect(destino || audioCtx.destination);
+    osc.start(inicio);
+    osc.stop(fim);
+    oscillators.push(osc);
+}
+
+// Kick drum sintético
+function kick(t) {
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+    gain.gain.setValueAtTime(1.2, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.3);
+    oscillators.push(osc);
+}
+
+// Snare sintético
+function snare(t) {
+    const bufferSize = audioCtx.sampleRate * 0.15;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'highpass'; filter.frequency.value = 1000;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.6, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+    noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+    noise.start(t); noise.stop(t + 0.2);
+}
+
+// Hi-hat sintético
+function hihat(t, volume = 0.3) {
+    const bufferSize = audioCtx.sampleRate * 0.05;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'highpass'; filter.frequency.value = 7000;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(volume, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+    noise.start(t); noise.stop(t + 0.08);
+}
+
+// Nota de baixo
+function bass(t, freq, dur) {
+    criarOscilador('sawtooth', freq, 0.35, t, t + dur);
+}
+
+// Nota de synth
+function synth(t, freq, dur, vol = 0.15) {
+    criarOscilador('square', freq, vol, t, t + dur);
+}
+
+// ========== MÚSICAS POR DIFICULDADE ==========
+
+function tocarMusica(dif) {
+    if (!audioCtx) return;
+
+    const bpm = DIFICULDADES[dif].bpm;
+    const beat = 60 / bpm;      // duração de 1 beat em segundos
+    const bar  = beat * 4;      // duração de 1 compasso (4 beats)
+
+    if (dif === 'facil') tocarChill(beat, bar);
+    else if (dif === 'medio') tocarRush(beat, bar);
+    else tocarChaos(beat, bar);
+}
+
+// --- FÁCIL: Electronic Chill (80 BPM) ---
+// Groove relaxado, baixo suave, poucos hi-hats
+function tocarChill(beat, bar) {
+    const notas = [65.41, 82.41, 98.00, 110.00]; // C2, E2, G2, A2
+    const melNotas = [261.63, 329.63, 392.00, 440.00, 523.25]; // C4 D4 E4 G4 A4
+
+    function loop() {
+        if (!musicaAtiva) return;
+        const t = audioCtx.currentTime;
+
+        // Kick: beats 1 e 3
+        kick(t);
+        kick(t + beat * 2);
+
+        // Snare: beat 3
+        snare(t + beat * 2);
+
+        // Hi-hats suaves nos beats
+        for (let i = 0; i < 4; i++) hihat(t + beat * i, 0.18);
+
+        // Baixo (groove simples)
+        bass(t,            notas[0], beat * 1.8);
+        bass(t + beat,     notas[1], beat * 0.8);
+        bass(t + beat*2,   notas[2], beat * 1.8);
+        bass(t + beat*3,   notas[0], beat * 0.8);
+
+        // Melodia suave
+        const mel = melNotas[Math.floor(Math.random() * melNotas.length)];
+        synth(t + beat * 0.5, mel,       beat * 0.4, 0.08);
+        synth(t + beat * 2.5, mel * 1.5, beat * 0.4, 0.08);
+
+        beatInterval = setTimeout(loop, bar * 1000);
+    }
+    loop();
+}
+
+// --- MÉDIO: Electronic Rush (120 BPM) ---
+// Clássico four-on-the-floor, bassline energética, synth lead
+function tocarRush(beat, bar) {
+    const bassNotas = [110.00, 138.59, 164.81, 146.83]; // A2 C#3 E3 D3
+    const lead = [523.25, 659.25, 783.99, 880.00, 1046.50]; // C5 E5 G5 A5 C6
+
+    function loop() {
+        if (!musicaAtiva) return;
+        const t = audioCtx.currentTime;
+
+        // Four-on-the-floor kick
+        for (let i = 0; i < 4; i++) kick(t + beat * i);
+
+        // Snare beats 2 e 4
+        snare(t + beat);
+        snare(t + beat * 3);
+
+        // Hi-hats em colcheias (a cada meio beat)
+        for (let i = 0; i < 8; i++) hihat(t + beat * i * 0.5, 0.25);
+
+        // Bassline energética
+        bass(t,            bassNotas[0], beat * 0.9);
+        bass(t + beat,     bassNotas[1], beat * 0.4);
+        bass(t + beat*1.5, bassNotas[1], beat * 0.4);
+        bass(t + beat*2,   bassNotas[2], beat * 0.9);
+        bass(t + beat*3,   bassNotas[3], beat * 0.9);
+
+        // Synth lead arpejado
+        const l = lead[Math.floor(Math.random() * lead.length)];
+        synth(t,            l,       beat * 0.45, 0.12);
+        synth(t + beat,     l * 1.5, beat * 0.45, 0.10);
+        synth(t + beat * 2, l,       beat * 0.45, 0.12);
+        synth(t + beat * 3, l * 0.75,beat * 0.45, 0.10);
+
+        beatInterval = setTimeout(loop, bar * 1000);
+    }
+    loop();
+}
+
+// --- DIFÍCIL: Electronic Chaos (160 BPM) ---
+// Ritmo denso, kicks e snares duplos, bassline agressiva, synth frenético
+function tocarChaos(beat, bar) {
+    const bassNotas = [82.41, 110.00, 123.47, 164.81]; // E2 A2 B2 E3
+    const lead = [1046.50, 1318.51, 1567.98, 1760.00];
+
+    function loop() {
+        if (!musicaAtiva) return;
+        const t = audioCtx.currentTime;
+
+        // Kicks duplos e agressivos
+        kick(t);
+        kick(t + beat * 0.5);
+        kick(t + beat * 2);
+        kick(t + beat * 2.75);
+
+        // Snares
+        snare(t + beat);
+        snare(t + beat * 3);
+        snare(t + beat * 3.5);
+
+        // Hi-hats em semicolcheias
+        for (let i = 0; i < 16; i++) hihat(t + beat * i * 0.25, 0.2);
+
+        // Bassline agressiva
+        bass(t,             bassNotas[0], beat * 0.4);
+        bass(t + beat*0.5,  bassNotas[1], beat * 0.4);
+        bass(t + beat,      bassNotas[2], beat * 0.9);
+        bass(t + beat*2,    bassNotas[0], beat * 0.4);
+        bass(t + beat*2.5,  bassNotas[3], beat * 0.4);
+        bass(t + beat*3,    bassNotas[1], beat * 0.9);
+
+        // Synth caótico
+        for (let i = 0; i < 4; i++) {
+            const l = lead[Math.floor(Math.random() * lead.length)];
+            synth(t + beat * i * 0.9, l, beat * 0.2, 0.1);
+        }
+
+        beatInterval = setTimeout(loop, bar * 1000);
+    }
+    loop();
+}
 
 // ========== INICIALIZAÇÃO ==========
 window.addEventListener('DOMContentLoaded', async () => {
@@ -39,6 +251,16 @@ window.addEventListener('DOMContentLoaded', async () => {
     gerarFila();
     proximaSeta();
     detetarCabeca();
+
+    // Iniciar áudio no primeiro toque (requisito dos browsers)
+    document.addEventListener('click', function startAudio() {
+        if (!audioCtx) iniciarAudio();
+        document.removeEventListener('click', startAudio);
+    }, { once: true });
+    document.addEventListener('touchstart', function startAudioT() {
+        if (!audioCtx) iniciarAudio();
+        document.removeEventListener('touchstart', startAudioT);
+    }, { once: true });
 });
 
 // ========== CARREGAR MODELOS FACE-API ==========
@@ -53,21 +275,15 @@ async function iniciarCamera() {
     const video = document.getElementById('video');
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
-
     return new Promise(resolve => {
-        video.onloadeddata = () => {
-            video.play();
-            resolve();
-        };
+        video.onloadeddata = () => { video.play(); resolve(); };
     });
 }
 
 // ========== GERAR FILA DE SETAS ==========
 function gerarFila() {
     filaSetaS = [];
-    for (let i = 0; i < 5; i++) {
-        filaSetaS.push(SETAS[Math.floor(Math.random() * SETAS.length)]);
-    }
+    for (let i = 0; i < 5; i++) filaSetaS.push(SETAS[Math.floor(Math.random() * SETAS.length)]);
     atualizarProximas();
 }
 
@@ -78,14 +294,10 @@ function atualizarProximas() {
 
 // ========== PRÓXIMA SETA ==========
 function proximaSeta() {
-    jogoAtivo = true;
-    bloqueado = false;
-    ultimaDirecao = null;
+    jogoAtivo = true; bloqueado = false; ultimaDirecao = null;
 
     if (filaSetaS.length < 3) {
-        for (let i = 0; i < 5; i++) {
-            filaSetaS.push(SETAS[Math.floor(Math.random() * SETAS.length)]);
-        }
+        for (let i = 0; i < 5; i++) filaSetaS.push(SETAS[Math.floor(Math.random() * SETAS.length)]);
     }
 
     setaAtual = filaSetaS.shift();
@@ -96,22 +308,12 @@ function proximaSeta() {
 
     tempoRestante = 100;
     clearInterval(timerInterval);
-
     const intervalo = config.tempoSeta / 100;
     timerInterval = setInterval(() => {
         tempoRestante -= 1;
         document.getElementById('timer-fill').style.width = tempoRestante + '%';
-
-        if (tempoRestante <= 30) {
-            document.getElementById('timer-fill').style.background = '#e24b4a';
-        } else {
-            document.getElementById('timer-fill').style.background = '#1d9e75';
-        }
-
-        if (tempoRestante <= 0) {
-            clearInterval(timerInterval);
-            errou();
-        }
+        document.getElementById('timer-fill').style.background = tempoRestante <= 30 ? '#e24b4a' : '#1d9e75';
+        if (tempoRestante <= 0) { clearInterval(timerInterval); errou(); }
     }, intervalo);
 }
 
@@ -119,48 +321,44 @@ function proximaSeta() {
 function acertou() {
     if (bloqueado) return;
     bloqueado = true;
-
     pontos += 10;
     document.getElementById('pontos-display').textContent = pontos;
     document.getElementById('seta-atual').style.color = '#5dcaa5';
-
     clearInterval(timerInterval);
     ultimaDirecao = null;
-
-    setTimeout(() => {
-        proximaSeta();
-    }, 300);
+    // Som de acerto
+    if (audioCtx) {
+        const t = audioCtx.currentTime;
+        criarOscilador('sine', 880, 0.3, t, t + 0.1);
+        criarOscilador('sine', 1320, 0.2, t + 0.08, t + 0.18);
+    }
+    setTimeout(() => { proximaSeta(); }, 300);
 }
 
 // ========== ERROU ==========
 function errou() {
     if (bloqueado) return;
     bloqueado = true;
-
     vidas--;
     atualizarVidas();
     document.getElementById('seta-atual').style.color = '#e24b4a';
     clearInterval(timerInterval);
     ultimaDirecao = null;
-
-    setTimeout(() => {
-        if (vidas <= 0) {
-            gameOver();
-        } else {
-            proximaSeta();
-        }
-    }, 300);
+    // Som de erro
+    if (audioCtx) {
+        const t = audioCtx.currentTime;
+        criarOscilador('sawtooth', 150, 0.4, t, t + 0.3);
+    }
+    setTimeout(() => { vidas <= 0 ? gameOver() : proximaSeta(); }, 300);
 }
 
 // ========== ATUALIZAR VIDAS ==========
 function atualizarVidas() {
     let display = '';
     for (let i = 0; i < 3; i++) {
-        if (i < vidas) {
-            display += '<span style="color:#e24b4a;">♥</span> ';
-        } else {
-            display += '<span style="color:#e24b4a; opacity:0.2;">♥</span> ';
-        }
+        display += i < vidas
+            ? '<span style="color:#e24b4a;">♥</span> '
+            : '<span style="color:#e24b4a; opacity:0.2;">♥</span> ';
     }
     document.getElementById('vidas-display').innerHTML = display;
 }
@@ -169,6 +367,7 @@ function atualizarVidas() {
 function gameOver() {
     jogoAtivo = false;
     clearInterval(timerInterval);
+    pararAudio();
     document.getElementById('jogo').style.display = 'none';
     document.getElementById('gameover').style.display = 'flex';
     document.getElementById('pontos-finais').textContent = pontos;
@@ -176,11 +375,13 @@ function gameOver() {
 
 // ========== VOLTAR AO MENU ==========
 function voltarMenu() {
+    pararAudio();
     window.location.href = 'index.html';
 }
 
 // ========== REINICIAR ==========
 function reiniciar() {
+    pararAudio();
     window.location.href = `game.html?dificuldade=${dificuldade}`;
 }
 
@@ -191,10 +392,7 @@ async function detetarCabeca() {
 
     await new Promise(resolve => {
         const check = setInterval(() => {
-            if (video.videoWidth > 0) {
-                clearInterval(check);
-                resolve();
-            }
+            if (video.videoWidth > 0) { clearInterval(check); resolve(); }
         }, 100);
     });
 
@@ -205,77 +403,65 @@ async function detetarCabeca() {
     async function loopProcessamento() {
         if (jogoAtivo && !bloqueado) {
             const detecao = await faceapi
-                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({
-                    inputSize: 160,
-                    scoreThreshold: 0.4
-                }))
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 }))
                 .withFaceLandmarks();
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (detecao) {
                 const direcao = calcularDirecao(detecao.landmarks);
-
                 if (direcao && direcao !== ultimaDirecao) {
                     ultimaDirecao = direcao;
-                    console.log('Direção detetada:', direcao, '| Precisa:', DIRECOES[setaAtual]);
-                    if (setaAtual && DIRECOES[setaAtual] === direcao) {
-                        acertou();
-                    }
+                    if (setaAtual && DIRECOES[setaAtual] === direcao) acertou();
                 }
-            } else {
-                console.log('Rosto não detetado');
             }
         }
-
         setTimeout(loopProcessamento, 40);
     }
-
     loopProcessamento();
 }
 
 // ========== CALCULAR DIREÇÃO DA CABEÇA ==========
 function calcularDirecao(landmarks) {
-    // 1. Ir buscar as listas oficiais de pontos estáveis (Nariz e Olhos)
-    const narizArray = landmarks.getNose();
+    const narizArray   = landmarks.getNose();
     const olhoEsqArray = landmarks.getLeftEye();
     const olhoDirArray = landmarks.getRightEye();
+    const queixoArray  = landmarks.getJawOutline();
 
-    // Segurança contra frames perdidos
-    if (!narizArray || !olhoEsqArray || !olhoDirArray) return null;
+    if (!narizArray || !olhoEsqArray || !olhoDirArray || !queixoArray) return null;
 
-    // 2. Usar o índice 0 (primeiro elemento do array) para extrair os pontos reais {x, y}
-    const pontoNariz = narizArray[3]; // Ponta central do nariz
-    const pontoOlhoEsq = olhoEsqArray[0]; // Canto externo esquerdo
-    const pontoOlhoDir = olhoDirArray[3]; // Canto externo direito
+    const olhoEsq = olhoEsqArray[0];
+    const olhoDir = olhoDirArray[3];
+    const nariz   = narizArray[3];
+    const queixo  = queixoArray[8];
 
-    // 3. Calcular o ponto central exato entre os dois olhos
     const centroOlhos = {
-        x: (pontoOlhoEsq.x + pontoOlhoDir.x) / 2,
-        y: (pontoOlhoEsq.y + pontoOlhoDir.y) / 2
+        x: (olhoEsq.x + olhoDir.x) / 2,
+        y: (olhoEsq.y + olhoDir.y) / 2
     };
 
-    // 4. Distância proporcional dos olhos para calibrar o ecrã dinamicamente
-    const distanciaOlhos = Math.abs(pontoOlhoEsq.x - pontoOlhoDir.x);
+    const alturaRosto    = queixo.y - centroOlhos.y;
+    const distanciaOlhos = Math.abs(olhoEsq.x - olhoDir.x);
 
-    // 5. Diferença entre o nariz e o centro estável do rosto
-    const diffX = pontoNariz.x - centroOlhos.x;
-    const diffY = pontoNariz.y - centroOlhos.y;
+    const diffX = -(nariz.x - centroOlhos.x);
+    const ratioPosicaoNariz = (nariz.y - centroOlhos.y) / alturaRosto;
+    const neutral = 0.40;
+    const diffY = ratioPosicaoNariz - neutral;
 
-    // 6. Configurações de limiares suaves (Para não doer o pescoço)
-    const limiarHorizontal = distanciaOlhos * 0.08;
-    const limiarBaixo = distanciaOlhos * 0.16;   // Aumentado: impede que a seta para baixo dispare sozinha
-    const limiarCima = distanciaOlhos * 0.02;    // Reduzido: basta levantar ligeiramente o queixo
+    const limiarH     = distanciaOlhos * 0.10;
+    const limiarCima  = 0.06;
+    const limiarBaixo = 0.04;
 
-    if (Math.abs(diffX) > Math.abs(diffY)) {
-        // Correção do efeito espelho lateral
-        if (diffX > limiarHorizontal) return 'esquerda';
-        if (diffX < -limiarHorizontal) return 'direita';
-    } else {
-        // Lógica vertical livre de bugs
-        if (diffY < -limiarCima) return 'cima';
-        if (diffY > limiarBaixo) return 'baixo';
+    const movH = Math.abs(diffX);
+    const movV = Math.abs(diffY) * distanciaOlhos;
+
+    if (movV > movH * 0.5) {
+        if (diffY < -limiarCima)  return 'cima';
+        if (diffY > limiarBaixo)  return 'baixo';
     }
+
+    if (diffX > limiarH)  return 'direita';
+    if (diffX < -limiarH) return 'esquerda';
 
     return null;
 }

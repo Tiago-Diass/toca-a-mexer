@@ -10,6 +10,7 @@ const DIRECOES = { '↑': 'cima', '↓': 'baixo', '←': 'esquerda', '→': 'dir
 
 // ========== ESTADO DO JOGO ==========
 let pontos = 0, vidas = 3, filaSetaS = [], setaAtual = null;
+let historicoSetas = [];
 let timerInterval = null, tempoRestante = 100;
 let dificuldade = 'medio', config = DIFICULDADES['medio'];
 let jogoAtivo = false, ultimaDirecao = null, bloqueado = false;
@@ -317,6 +318,21 @@ function proximaSeta() {
     }, intervalo);
 }
 
+// ========== HISTÓRICO DE SETAS ==========
+function adicionarHistorico(seta, acerto) {
+    historicoSetas.push({ seta, acerto });
+    if (historicoSetas.length > 6) historicoSetas.shift();
+
+    const container = document.getElementById('historico-setas');
+    container.innerHTML = '';
+    historicoSetas.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'historico-seta ' + (item.acerto ? 'acerto' : 'erro');
+        div.textContent = item.seta;
+        container.appendChild(div);
+    });
+}
+
 // ========== ACERTOU ==========
 function acertou() {
     if (bloqueado) return;
@@ -326,6 +342,7 @@ function acertou() {
     document.getElementById('seta-atual').style.color = '#5dcaa5';
     clearInterval(timerInterval);
     ultimaDirecao = null;
+    adicionarHistorico(setaAtual, true);
     // Som de acerto
     if (audioCtx) {
         const t = audioCtx.currentTime;
@@ -344,6 +361,7 @@ function errou() {
     document.getElementById('seta-atual').style.color = '#e24b4a';
     clearInterval(timerInterval);
     ultimaDirecao = null;
+    adicionarHistorico(setaAtual, false);
     // Som de erro
     if (audioCtx) {
         const t = audioCtx.currentTime;
